@@ -29,7 +29,6 @@
 - **DSM 7.0+** (empfohlen: DSM 7.2+)
 - **Container Manager** — installierbar über das DSM Paketzentrum
 - **Portainer** — läuft bereits auf deiner NAS
-- **SSH-Zugang** — nur einmalig für den initialen Image-Build nötig
 
 ### API-Keys
 
@@ -46,24 +45,23 @@ Du brauchst mindestens **einen** LLM-API-Key:
 
 ## 2. Erstinstallation
 
-### Schritt 1: Image bauen (einmalig per SSH)
+### Schritt 1: Image bauen via Portainer
 
-```bash
-ssh dein-user@NAS-IP
+1. Öffne **Portainer** (`https://NAS-IP:9443`)
+2. Gehe zu **Images → Build a new image**
+3. **Name:** `zeroclaw:latest`
+4. Wähle **URL** und gib ein:
+   ```
+   https://raw.githubusercontent.com/dmayk/zeroclaw/main/Dockerfile
+   ```
+   **Oder** wähle **Web editor** und kopiere den Inhalt des Dockerfiles hinein:
+   https://github.com/dmayk/zeroclaw/blob/main/Dockerfile
+5. Klicke **Build the image**
+6. Warte 10-30 Minuten (Rust-Compilation) — Fortschritt wird live angezeigt
 
-# Projektverzeichnis und Datenverzeichnis erstellen
-sudo mkdir -p /volume1/docker/zeroclaw/data
-
-# Dockerfile holen
-cd /volume1/docker/zeroclaw
-sudo curl -fsSL -o Dockerfile \
-    https://raw.githubusercontent.com/dmayk/zeroclaw/main/Dockerfile
-
-# Image bauen (dauert 10-30 Minuten beim ersten Mal)
-sudo docker build -t zeroclaw:latest .
-```
-
-> Das war's mit SSH. Ab jetzt läuft alles über Portainer.
+> **Hinweis:** Portainer braucht einen Build-Kontext. Da unser Dockerfile
+> das Repository selbst klont, kannst du den Build-Kontext leer lassen
+> oder auf ein leeres Verzeichnis zeigen lassen.
 
 ### Schritt 2: Stack in Portainer erstellen
 
@@ -215,38 +213,32 @@ Sichtbar in **File Station** → `docker/zeroclaw/data/`.
 
 ## 5. Updates
 
-### Standard-Update (per SSH)
+### Standard-Update via Portainer
 
-```bash
-ssh dein-user@NAS-IP
-cd /volume1/docker/zeroclaw
+1. **Images → Build a new image**
+2. Name: `zeroclaw:latest`
+3. Dockerfile wie bei der Erstinstallation einfügen (oder URL)
+4. **Build the image** (10-30 Minuten)
+5. **Containers → zeroclaw → Recreate** → Haken bei **Pull latest image** deaktivieren → **Recreate**
 
-# Image mit neuestem Code bauen
-sudo docker build -t zeroclaw:latest --no-cache .
-
-# Container neu starten
-sudo docker restart zeroclaw
-```
-
-Das Dockerfile klont automatisch den neuesten `main` Branch.
+Das Dockerfile klont automatisch den neuesten `main` Branch bei jedem Build.
 
 ### Update auf eine bestimmte Version
 
+Ändere im Dockerfile vor dem Build die `ARG` Zeile:
+
+```dockerfile
+ARG ZEROCLAW_VERSION=v0.6.0
+```
+
+Oder nutze per SSH:
+
 ```bash
+cd /volume1/docker/zeroclaw
 sudo docker build -t zeroclaw:latest --build-arg ZEROCLAW_VERSION=v0.6.0 --no-cache .
-sudo docker restart zeroclaw
 ```
 
-### Zurückrollen
-
-```bash
-sudo docker build -t zeroclaw:latest --build-arg ZEROCLAW_VERSION=v0.4.0 --no-cache .
-sudo docker restart zeroclaw
-```
-
-### Nach dem Build
-
-In Portainer: **Containers → zeroclaw → Recreate** (oder `docker restart` wie oben).
+Dann in Portainer: **Containers → zeroclaw → Recreate**.
 
 ---
 
@@ -261,20 +253,11 @@ In Portainer: **Containers → zeroclaw → Recreate** (oder `docker restart` wi
 
 ### Backup
 
-```bash
-cd /volume1/docker/zeroclaw
-sudo tar czf zeroclaw-backup-$(date +%Y%m%d).tar.gz data/
-```
-
-Oder einfach per **File Station** den `data/` Ordner kopieren.
+Per **File Station**: `docker/zeroclaw/data/` Ordner kopieren oder herunterladen.
 
 ### Restore
 
-```bash
-cd /volume1/docker/zeroclaw
-sudo tar xzf zeroclaw-backup-DATUM.tar.gz
-```
-
+Per **File Station**: `data/` Ordner zurückkopieren nach `docker/zeroclaw/data/`.
 Dann in Portainer den Container neu starten.
 
 ### Hyper Backup
@@ -313,14 +296,8 @@ ZEROCLAW_TUNNEL_TOKEN=dein-cloudflare-tunnel-token
 
 ### Build: Out of Memory
 
-Stoppe andere Container während des Builds oder erhöhe Swap:
-
-```bash
-sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
-sudo mkswap /swapfile && sudo swapon /swapfile
-# Build ausführen, dann:
-sudo swapoff /swapfile && sudo rm /swapfile
-```
+Stoppe andere Container in Portainer während des Builds
+(**Containers → Select all → Stop**).
 
 ### Container startet nicht
 
@@ -329,27 +306,18 @@ sudo swapoff /swapfile && sudo rm /swapfile
 
 ### Speicher aufräumen
 
-```bash
-sudo docker system prune -f
-sudo docker builder prune -f
-```
+In Portainer: **Images → Unused images** aufräumen und **Volumes → Unused volumes** aufräumen.
 
 ---
 
 ## Quick Reference
 
-### Portainer
-
-| Aktion | Pfad |
+| Aktion | Portainer-Pfad |
 |---|---|
+| Image bauen | Images → Build a new image |
+| Stack deployen | Stacks → zeroclaw → Deploy |
+| Config ändern | Stacks → zeroclaw → Editor → Environment → Update |
 | Logs | Containers → zeroclaw → Logs |
 | Shell | Containers → zeroclaw → Console → `/bin/bash` |
-| Config ändern | Stacks → zeroclaw → Editor → Environment → Update |
 | Neustart | Containers → zeroclaw → Restart |
-| Recreate | Containers → zeroclaw → Recreate |
-
-### SSH (nur für Updates)
-
-```bash
-cd /volume1/docker/zeroclaw && sudo docker build -t zeroclaw:latest --no-cache . && sudo docker restart zeroclaw
-```
+| Update anwenden | Containers → zeroclaw → Recreate |
