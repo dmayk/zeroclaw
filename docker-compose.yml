@@ -1,0 +1,136 @@
+# =============================================================================
+# Zeroclaw — Docker Compose for Synology NAS + Portainer
+# =============================================================================
+#
+# Verzeichnisstruktur auf der NAS:
+#
+#   /volume1/docker/zeroclaw/           ← dieses Verzeichnis (deine Overrides)
+#   ├── docker-compose.yml              ← diese Datei
+#   ├── Dockerfile                      ← Custom Dockerfile
+#   ├── config/
+#   │   └── config.toml                 ← deine Konfiguration
+#   └── repo/                           ← geklontes GitHub-Repo
+#       └── (zeroclaw source code)
+#
+# Deployment via Portainer:
+#   Stacks → Add Stack → Web editor → Inhalt dieser Datei einfügen
+#   Environment variables setzen (mindestens ZEROCLAW_API_KEY)
+# =============================================================================
+
+services:
+  zeroclaw:
+    build:
+      # Build-Kontext = das geklonte Repo (enthält den Quellcode)
+      context: ./repo
+      # Unser eigenes Dockerfile (liegt NICHT im Repo, sondern hier daneben)
+      dockerfile: /volume1/docker/zeroclaw/Dockerfile
+    image: zeroclaw:latest
+    container_name: zeroclaw
+    restart: unless-stopped
+
+    environment:
+      # --- LLM Provider (Pflicht: mindestens einen Key setzen) ---
+      - ZEROCLAW_API_KEY=${ZEROCLAW_API_KEY}
+      # - ZEROCLAW_OPENAI_API_KEY=${ZEROCLAW_OPENAI_API_KEY}
+      # - ZEROCLAW_OPENROUTER_API_KEY=${ZEROCLAW_OPENROUTER_API_KEY}
+      # - ZEROCLAW_GROQ_API_KEY=${ZEROCLAW_GROQ_API_KEY}
+
+      # --- Memory Embeddings ---
+      - ZEROCLAW_EMBEDDING_API_KEY=${ZEROCLAW_EMBEDDING_API_KEY:-}
+
+      # --- Telegram ---
+      - ZEROCLAW_TELEGRAM_TOKEN=${ZEROCLAW_TELEGRAM_TOKEN:-}
+
+      # --- Discord ---
+      - ZEROCLAW_DISCORD_TOKEN=${ZEROCLAW_DISCORD_TOKEN:-}
+
+      # --- Slack ---
+      - ZEROCLAW_SLACK_BOT_TOKEN=${ZEROCLAW_SLACK_BOT_TOKEN:-}
+      - ZEROCLAW_SLACK_APP_TOKEN=${ZEROCLAW_SLACK_APP_TOKEN:-}
+      - ZEROCLAW_SLACK_SIGNING_SECRET=${ZEROCLAW_SLACK_SIGNING_SECRET:-}
+
+      # --- WhatsApp ---
+      - ZEROCLAW_WHATSAPP_TOKEN=${ZEROCLAW_WHATSAPP_TOKEN:-}
+      - ZEROCLAW_WHATSAPP_VERIFY_TOKEN=${ZEROCLAW_WHATSAPP_VERIFY_TOKEN:-}
+      - ZEROCLAW_WHATSAPP_PHONE_NUMBER_ID=${ZEROCLAW_WHATSAPP_PHONE_NUMBER_ID:-}
+
+      # --- Matrix ---
+      - ZEROCLAW_MATRIX_ACCESS_TOKEN=${ZEROCLAW_MATRIX_ACCESS_TOKEN:-}
+      - ZEROCLAW_MATRIX_USER_ID=${ZEROCLAW_MATRIX_USER_ID:-}
+
+      # --- Email ---
+      - ZEROCLAW_EMAIL_USER=${ZEROCLAW_EMAIL_USER:-}
+      - ZEROCLAW_EMAIL_PASSWORD=${ZEROCLAW_EMAIL_PASSWORD:-}
+
+      # --- Tunnel ---
+      - ZEROCLAW_TUNNEL_TOKEN=${ZEROCLAW_TUNNEL_TOKEN:-}
+
+    volumes:
+      # Konfigurationsdatei (deine eigene, read-only gemountet)
+      - /volume1/docker/zeroclaw/config/config.toml:/home/zeroclaw/.zeroclaw/config.toml:ro
+
+      # Persistente Daten: SQLite DB, Memory, Workspace, Secret Key
+      - zeroclaw-data:/home/zeroclaw/.zeroclaw
+
+    ports:
+      # Gateway/Webhook-Port — nur nötig wenn du Webhooks nutzt
+      - "${ZEROCLAW_PORT:-3000}:3000"
+
+    # Ressourcen-Limits (Zeroclaw ist extrem sparsam)
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "1.0"
+        reservations:
+          memory: 32M
+          cpus: "0.1"
+
+    # Logging mit Rotation (wichtig für NAS-Speicher)
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Sicherheit: Read-only Dateisystem, nur Datenverzeichnis beschreibbar
+    read_only: true
+    tmpfs:
+      - /tmp:size=64M
+
+    networks:
+      - zeroclaw-net
+
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
+
+  # =========================================================================
+  # Optional: Ollama für lokale LLM-Inference (kein API-Key nötig)
+  # Entkommentieren wenn du Modelle lokal auf der NAS laufen lassen willst.
+  # Achtung: Braucht deutlich mehr RAM (mind. 8 GB für kleine Modelle).
+  # =========================================================================
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ollama-models:/root/.ollama
+  #   ports:
+  #     - "11434:11434"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 8G
+  #         cpus: "4.0"
+  #   networks:
+  #     - zeroclaw-net
+
+volumes:
+  zeroclaw-data:
+    driver: local
+  # ollama-models:
+  #   driver: local
+
+networks:
+  zeroclaw-net:
+    driver: bridge

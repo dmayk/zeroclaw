@@ -1,0 +1,104 @@
+# =============================================================================
+# Zeroclaw Konfiguration — config.toml
+# =============================================================================
+# Kopiere diese Datei nach config.toml und passe sie an:
+#   cp config.toml.example config.toml
+#
+# API-Keys gehören in die .env Datei, NICHT hier rein.
+# Umgebungsvariablen mit ZEROCLAW_ Prefix überschreiben diese Werte.
+# =============================================================================
+
+# --- LLM Provider -----------------------------------------------------------
+# Wähle deinen bevorzugten LLM-Provider.
+# Unterstützt: anthropic, openai, groq, mistral, xai, deepseek, together,
+#              openrouter, ollama, venice, und weitere.
+[provider]
+kind = "anthropic"                      # oder "openai", "openrouter", "ollama"
+model = "claude-sonnet-4-5-20250929"    # Modell-ID des Providers
+# base_url = "https://api.anthropic.com"  # Nur ändern für Custom-Endpoints
+
+# Für lokales Ollama (kein API-Key nötig):
+# kind = "ollama"
+# model = "llama3.2"
+# base_url = "http://ollama:11434"    # Docker-Service-Name wenn Ollama läuft
+
+# --- Identität --------------------------------------------------------------
+# Definiere wer/was dein Agent ist.
+[identity]
+name = "Zeroclaw"
+# format = "openclaw"  # oder "aieos"
+
+# --- Memory ------------------------------------------------------------------
+# Persistenter Speicher für Konversationen und Wissen.
+[memory]
+backend = "sqlite"                          # "sqlite", "markdown", oder "none"
+embedding_provider = "openai"               # Provider für Vektor-Embeddings
+embedding_model = "text-embedding-3-small"  # Embedding-Modell
+vector_weight = 0.7                         # Gewichtung Vektor-Suche (0.0-1.0)
+keyword_weight = 0.3                        # Gewichtung Keyword-Suche (0.0-1.0)
+
+# --- Kanäle (Messaging) -----------------------------------------------------
+# Aktiviere die Kanäle die du nutzen willst.
+# API-Keys/Tokens kommen aus der .env Datei.
+
+# Telegram Bot
+# [channels.telegram]
+# enabled = true
+
+# Discord Bot
+# [channels.discord]
+# enabled = true
+
+# Slack Bot
+# [channels.slack]
+# enabled = true
+
+# WhatsApp (via Meta Business API)
+# [channels.whatsapp]
+# enabled = true
+
+# Matrix
+# [channels.matrix]
+# enabled = true
+# homeserver = "https://matrix.org"
+
+# Email
+# [channels.email]
+# enabled = true
+# imap_host = "imap.gmail.com"
+# smtp_host = "smtp.gmail.com"
+
+# Webhook (generisch)
+# [channels.webhook]
+# enabled = true
+
+# --- Gateway -----------------------------------------------------------------
+# HTTP-Server für Webhook-Empfang.
+[gateway]
+host = "0.0.0.0"   # Im Container auf alle Interfaces binden
+port = 3000
+# pairing = true    # OTP-Pairing für neue Verbindungen aktivieren
+
+# --- Sicherheit -------------------------------------------------------------
+[security]
+autonomy = "supervised"   # "readonly", "supervised", oder "full"
+# command_allowlist = ["ls", "cat", "echo", "date"]
+# path_blocklist = ["/etc", "/root", "/sys", "/proc"]
+
+# --- Tunnel (Remote-Zugriff) ------------------------------------------------
+# Nur nötig wenn Webhooks von außen erreichbar sein müssen.
+# [tunnel]
+# kind = "cloudflare"   # "cloudflare", "tailscale", "ngrok", "custom"
+# token = ""            # Besser via ZEROCLAW_TUNNEL_TOKEN in .env
+
+# --- Browser -----------------------------------------------------------------
+# [browser]
+# enabled = false
+# domain_allowlist = []
+
+# --- Observability -----------------------------------------------------------
+# [observer]
+# prometheus = true
+# prometheus_port = 9090
+# opentelemetry = false
+# otlp_endpoint = "http://localhost:4317"
