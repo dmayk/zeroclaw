@@ -100,14 +100,8 @@ services:
     ports:
       - "${ZEROCLAW_PORT:-3000}:3000"
 
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "1.0"
-        reservations:
-          memory: 32M
-          cpus: "0.1"
+    # Ressourcen-Limits via Portainer: Container → Edit → Resource Limits
+    mem_limit: 256m
 
     logging:
       driver: json-file
