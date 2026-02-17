@@ -100,9 +100,6 @@ services:
     ports:
       - "${ZEROCLAW_PORT:-3000}:3000"
 
-    # Ressourcen-Limits via Portainer: Container → Edit → Resource Limits
-    mem_limit: 256m
-
     logging:
       driver: json-file
       options:
