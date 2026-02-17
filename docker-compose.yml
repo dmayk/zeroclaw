@@ -81,6 +81,10 @@ services:
       # --- Email ---
       - ZEROCLAW_EMAIL_USER=${ZEROCLAW_EMAIL_USER:-}
       - ZEROCLAW_EMAIL_PASSWORD=${ZEROCLAW_EMAIL_PASSWORD:-}
+      - ZEROCLAW_EMAIL_IMAP_HOST=${ZEROCLAW_EMAIL_IMAP_HOST:-}
+      - ZEROCLAW_EMAIL_IMAP_PORT=${ZEROCLAW_EMAIL_IMAP_PORT:-993}
+      - ZEROCLAW_EMAIL_SMTP_HOST=${ZEROCLAW_EMAIL_SMTP_HOST:-}
+      - ZEROCLAW_EMAIL_SMTP_PORT=${ZEROCLAW_EMAIL_SMTP_PORT:-587}
 
       # =======================================================================
       # Tunnel (Remote-Zugriff für Webhooks)

@@ -158,6 +158,10 @@ ZEROCLAW_AUTONOMY=supervised
 | `ZEROCLAW_MATRIX_USER_ID` | Matrix User ID (z.B. `@bot:matrix.org`) |
 | `ZEROCLAW_EMAIL_USER` | Email-Adresse |
 | `ZEROCLAW_EMAIL_PASSWORD` | Email App-Passwort |
+| `ZEROCLAW_EMAIL_IMAP_HOST` | IMAP-Server (z.B. `imap.gmail.com`) |
+| `ZEROCLAW_EMAIL_IMAP_PORT` | IMAP-Port (Default: `993`) |
+| `ZEROCLAW_EMAIL_SMTP_HOST` | SMTP-Server (z.B. `smtp.gmail.com`) |
+| `ZEROCLAW_EMAIL_SMTP_PORT` | SMTP-Port (Default: `587`) |
 
 #### Tunnel (Remote-Zugriff)
 
