@@ -3,4 +3,5 @@ config/config.toml
 *.secret_key
 .DS_Store
 repo/
+data/
 backups/

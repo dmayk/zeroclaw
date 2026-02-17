@@ -9,6 +9,7 @@
 #   ├── Dockerfile                      ← Custom Dockerfile
 #   ├── config/
 #   │   └── config.toml                 ← deine Konfiguration
+#   ├── data/                           ← persistente Daten (SQLite, Keys, Workspace)
 #   └── repo/                           ← geklontes GitHub-Repo
 #       └── (zeroclaw source code)
 #
@@ -66,11 +67,12 @@ services:
       - ZEROCLAW_TUNNEL_TOKEN=${ZEROCLAW_TUNNEL_TOKEN:-}
 
     volumes:
+      # Persistente Daten: SQLite DB, Memory, Workspace, Secret Key
+      # Bind-Mount auf NAS-Pfad — sichtbar in File Station, sicherbar mit Hyper Backup
+      - /volume1/docker/zeroclaw/data:/home/zeroclaw/.zeroclaw
+
       # Konfigurationsdatei (deine eigene, read-only gemountet)
       - /volume1/docker/zeroclaw/config/config.toml:/home/zeroclaw/.zeroclaw/config.toml:ro
-
-      # Persistente Daten: SQLite DB, Memory, Workspace, Secret Key
-      - zeroclaw-data:/home/zeroclaw/.zeroclaw
 
     ports:
       # Gateway/Webhook-Port — nur nötig wenn du Webhooks nutzt
@@ -125,9 +127,8 @@ services:
   #   networks:
   #     - zeroclaw-net
 
-volumes:
-  zeroclaw-data:
-    driver: local
+# Keine Docker-Volumes nötig — alles per Bind-Mount auf NAS-Pfade
+# volumes:
   # ollama-models:
   #   driver: local
 

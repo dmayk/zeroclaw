@@ -68,11 +68,19 @@ deine Overrides (Dockerfile, Compose, Config) liegen daneben.
 ├── config/
 │   ├── config.toml                 ← deine aktive Konfiguration
 │   └── config.toml.example         ← Referenz-Template
+├── data/                           ← persistente Daten (SQLite, Secret Key, Workspace)
+│   ├── memory.db                   ← Konversationshistorie & Vektor-Embeddings
+│   ├── .secret_key                 ← Verschlüsselungsschlüssel
+│   └── workspace/                  ← Identitäts- und Arbeitsdateien
 └── repo/                           ← geklontes GitHub-Repo (git pull für Updates)
     ├── Cargo.toml
     ├── src/
     └── ...
 ```
+
+> **Wichtig:** Alle persistenten Daten liegen in `data/` direkt auf dem NAS-Dateisystem
+> (kein Docker-Volume). Dadurch sind sie sichtbar in File Station, einfach sicherbar
+> mit Hyper Backup, und überleben ein `docker volume prune` oder Stack-Löschung.
 
 ### Schritt 1: Per SSH auf die NAS verbinden
 
@@ -83,7 +91,7 @@ ssh dein-user@NAS-IP
 ### Schritt 2: Projektverzeichnis erstellen und Repo klonen
 
 ```bash
-sudo mkdir -p /volume1/docker/zeroclaw/config
+sudo mkdir -p /volume1/docker/zeroclaw/{config,data}
 cd /volume1/docker/zeroclaw
 
 # Zeroclaw-Repo klonen
@@ -228,7 +236,7 @@ In Portainer:
 | API-Keys & Secrets | Portainer → Stack → Environment | Portainer Web-UI |
 | Verhalten & Kanäle | `/volume1/docker/zeroclaw/config/config.toml` | File Station oder SSH |
 | Zeroclaw Quellcode | `/volume1/docker/zeroclaw/repo/` | `git pull` (nicht manuell ändern) |
-| Persistente Daten | Docker-Volume `zeroclaw_zeroclaw-data` | Automatisch verwaltet |
+| Persistente Daten | `/volume1/docker/zeroclaw/data/` | File Station (nur lesen) |
 | Dockerfile | `/volume1/docker/zeroclaw/Dockerfile` | File Station oder SSH |
 
 ### config.toml bearbeiten
@@ -425,59 +433,44 @@ sudo docker restart zeroclaw
 |---|---|---|
 | Environment-Variablen | Portainer Stack-Einstellungen | Kritisch — notiere deine Keys separat |
 | config.toml | `/volume1/docker/zeroclaw/config/` | Hoch |
-| SQLite-Datenbank + Secret Key | Docker-Volume `zeroclaw_zeroclaw-data` | Hoch |
+| SQLite-Datenbank + Secret Key | `/volume1/docker/zeroclaw/data/` | Hoch |
 | Repo + Overrides | `/volume1/docker/zeroclaw/` | Niedrig — reproduzierbar via `git clone` |
 
 ### Backup erstellen
 
-**Via SSH (empfohlen):**
+Da alle Daten direkt auf dem NAS-Dateisystem liegen (kein Docker-Volume),
+ist Backup trivial:
 
 ```bash
 cd /volume1/docker/zeroclaw
 mkdir -p backups
 
-# Config sichern
-cp config/config.toml backups/config.toml.$(date +%Y%m%d)
-
-# Docker-Volume sichern
-sudo docker run --rm \
-    -v zeroclaw_zeroclaw-data:/data:ro \
-    -v /volume1/docker/zeroclaw/backups:/backup \
-    debian:bookworm-slim \
-    tar czf /backup/zeroclaw-data-$(date +%Y%m%d).tar.gz -C /data .
+# Alles Wichtige in ein Archiv
+sudo tar czf backups/zeroclaw-$(date +%Y%m%d).tar.gz config/config.toml data/
 ```
 
-**Via Portainer Console** (Container → Console → `/bin/bash`):
-
-```bash
-tar czf /tmp/zeroclaw-backup.tar.gz -C /home/zeroclaw .zeroclaw
-```
-
-Dann per File Station die Datei aus dem Container-tmpfs kopieren.
+Oder einfach per **File Station** den `data/` und `config/` Ordner kopieren.
 
 ### Restore
 
 ```bash
-# Config wiederherstellen
-cp /volume1/docker/zeroclaw/backups/config.toml.DATUM \
-   /volume1/docker/zeroclaw/config/config.toml
+cd /volume1/docker/zeroclaw
 
-# Volume wiederherstellen
-sudo docker run --rm \
-    -v zeroclaw_zeroclaw-data:/data \
-    -v /volume1/docker/zeroclaw/backups:/backup \
-    debian:bookworm-slim \
-    tar xzf /backup/zeroclaw-data-DATUM.tar.gz -C /data
+# Aus Backup wiederherstellen
+sudo tar xzf backups/zeroclaw-DATUM.tar.gz
 ```
 
 Dann in Portainer den Container neu starten.
 
-### Hyper Backup
+### Hyper Backup (empfohlen)
 
-Füge diese Pfade zu deinem Hyper Backup Task hinzu:
-- `/volume1/docker/zeroclaw/config/`
-- `/volume1/docker/zeroclaw/backups/`
-- `/volume1/@docker/volumes/zeroclaw_zeroclaw-data/_data/`
+Da alles unter `/volume1/docker/zeroclaw/` liegt, füge einfach diesen einen
+Pfad zu deinem Hyper Backup Task hinzu:
+
+- `/volume1/docker/zeroclaw/` (schließt `config/`, `data/` und `backups/` ein)
+
+Das `repo/`-Verzeichnis wird zwar mitgesichert, schadet aber nicht — es ist
+jederzeit per `git clone` reproduzierbar.
 
 ---
 
@@ -581,7 +574,7 @@ da sie außerhalb des Repos liegen.
 In Portainer:
 
 1. **Images → Unused images** → Aufräumen
-2. **Volumes → Unused volumes** → Aufräumen (Vorsicht: nicht `zeroclaw-data` löschen!)
+2. **Volumes → Unused volumes** → Aufräumen
 
 Per SSH:
 
