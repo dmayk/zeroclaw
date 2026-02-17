@@ -95,7 +95,7 @@ services:
     volumes:
       # Persistente Daten auf dem NAS-Dateisystem
       # Sichtbar in File Station, sicherbar mit Hyper Backup
-      - /volume1/docker/zeroclaw/data:/home/zeroclaw/.zeroclaw
+      - /volume1/docker/zeroclaw/data:/root/.zeroclaw
 
     ports:
       - "${ZEROCLAW_PORT:-3000}:3000"
