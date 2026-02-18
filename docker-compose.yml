@@ -41,7 +41,7 @@ services:
       # =======================================================================
       # Gateway
       # =======================================================================
-      - ZEROCLAW_GATEWAY_HOST=${ZEROCLAW_GATEWAY_HOST:-0.0.0.0}
+      - ZEROCLAW_GATEWAY_HOST=${ZEROCLAW_GATEWAY_HOST:-127.0.0.1}
       - ZEROCLAW_GATEWAY_PORT=${ZEROCLAW_GATEWAY_PORT:-3000}
 
       # =======================================================================

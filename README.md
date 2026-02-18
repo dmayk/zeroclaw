@@ -137,7 +137,7 @@ ZEROCLAW_AUTONOMY=supervised
 
 | Variable | Default | Beschreibung |
 |---|---|---|
-| `ZEROCLAW_GATEWAY_HOST` | `0.0.0.0` | Bind-Adresse |
+| `ZEROCLAW_GATEWAY_HOST` | `127.0.0.1` | Bind-Adresse |
 | `ZEROCLAW_GATEWAY_PORT` | `3000` | HTTP-Port |
 | `ZEROCLAW_AUTONOMY` | `supervised` | `readonly`, `supervised`, oder `full` |
 | `ZEROCLAW_IDENTITY_NAME` | `Zeroclaw` | Name deines Agenten |
